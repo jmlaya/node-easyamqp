@@ -1,6 +1,6 @@
 {
   "name": "easyamqp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A library to simplify the consume queues and publish messages in AMQP",
   "main": "bin/easyamqp.js",
   "scripts": {
