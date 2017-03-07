@@ -1,0 +1,41 @@
+{
+  "name": "easyamqp",
+  "version": "1.0.0",
+  "description": "A library to simplify the consume queues and publish messages in AMQP",
+  "main": "bin/easyamqp.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "babel src -s -D -d bin --presets es2015,stage-0",
+    "install": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jmlaya/node-easyamqp.git"
+  },
+  "keywords": [
+    "node",
+    "amqp",
+    "service",
+    "nodejs",
+    "rabbitmq",
+    "queues"
+  ],
+  "author": "José Laya <@jmlaya>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jmlaya/node-easyamqp/issues"
+  },
+  "homepage": "https://github.com/jmlaya/node-easyamqp#readme",
+  "dependencies": {
+    "colors": "1.1.2",
+    "js-yaml": "3.8.1",
+    "amqplib": "^0.4.2"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.23.0",
+    "babel-core": "^6.23.1",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-preset-es2015": "^6.22.0",
+    "babel-preset-stage-0": "^6.22.0"
+  }
+}
