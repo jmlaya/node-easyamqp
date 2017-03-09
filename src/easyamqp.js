@@ -23,7 +23,7 @@ export default class {
     }
   }
 
-  listenQueues () {
+  listenQueues() {
 
     const cnnStr = __getConnectionString(this.config);
 
@@ -43,15 +43,15 @@ export default class {
       .then(_createChannel)
       .then(_assertQueues(this.config))
       .catch(err => {
-        __errorMessage(err.message.grey, true);
+        __errorMessage(err, true);
       });
   }
 
-  sendToExchange (exchange, routingKey, data, options){
+  sendToExchange(exchange, routingKey, data, options) {
     _sendMessage.bind(this)(null, exchange, routingKey, data, options);
   }
 
-  sendToQuque (queue, data, options){
+  sendToQuque(queue, data, options) {
     _sendMessage.bind(this)(queue, null, null, data, options);
   }
 
@@ -74,30 +74,37 @@ function __loadConfig(fileName) {
   let file = `${process.cwd()}${fileName}`;
 
   try {
-    let config = yaml.safeLoad(fs.readFileSync(file, "utf8"));
-    config = Object.assign({}, config, __loadEnvironmentFile(config && config.environment || null));
-    return config;
+    const config = yaml.safeLoad(fs.readFileSync(file, "utf8"));
+    const environment = __loadEnvironmentFile(config && config.environment || null) || {};
+
+    return Object.keys(config).reduce((prev, curr) => {
+      if (typeof config[curr] === 'object' && !Array.isArray(config[curr])) {
+        prev[curr] = Object.assign({}, config[curr], environment[curr] || {});
+      } else {
+        prev[curr] = environment[curr] || config[curr];
+      }
+      return prev;
+    }, {});
   } catch (err) {
     __errorMessage(`AMQP config file "${fileName}" could not be loaded`.grey);
-    __errorMessage(err.message.red, true);
+    __errorMessage(err, true);
   }
 }
 
 function __loadEnvironmentFile(environment) {
-  let envName = environment || CONST.DEFAULT_ENVIRONMENT;
+  let envName = process.env.NODE_ENV || environment || CONST.DEFAULT_ENVIRONMENT;
 
   try {
     if (envName !== CONST.DEFAULT_ENVIRONMENT) {
-      const file = path.join(process.cwd(), `/environment/${envName}.yml`),
-        config = Object.assign(
-          yaml.safeLoad(fs.readFileSync(file, "utf8")) || {}, { type: envName }
-        );
-      __okMessage(`Environent ${envName} config file ${file} loaded`);
-      return config;
+      const file = `${process.cwd()}/environment/easyamqp.${envName}.yml`;
+      
+      return Object.assign(
+        yaml.safeLoad(fs.readFileSync(file, "utf8")) || {}, { type: envName }
+      );
     }
   } catch (err) {
     __errorMessage(`Environment "${envName}" could not be loaded`.grey);
-    __errorMessage(err.message.red, true);
+    __errorMessage(err, true);
   }
 }
 
@@ -177,9 +184,9 @@ function _createChannel(connection) {
 }
 
 function _assertQueues(config) {
+
   return channel => {
     __br('BINDING QUEUES', false);
-
     const promises = [];
     config.queues.forEach(queue => {
       promises.push(new Promise((res, rej) => {
@@ -191,7 +198,7 @@ function _assertQueues(config) {
 
     Promise.all(promises).then(values => {
       values.forEach(value => {
-        let {q, queue} = value;
+        let { q, queue } = value;
         q.config = queue;
         _createQueueBindings(q, channel);
         _consumeMessages(q, channel, config.tasks);
@@ -217,9 +224,9 @@ function _consumeMessages(queue, channel, tasks, binding) {
   const self = this;
   let handled = false;
 
-  if(queue.config.bindings){
+  if (queue.config.bindings) {
     queue.config.bindings.forEach(binding => {
-      if(binding.task){
+      if (binding.task) {
         handled = !handled ? true : handled;
         __okMessage(`Listening from ${queue.config.name} using ${binding.exchange}[${binding['routing-key']}]`.grey);
       } else {
@@ -233,7 +240,7 @@ function _consumeMessages(queue, channel, tasks, binding) {
     __okMessage(`Listening direct messages from ${queue.config.name}`.grey);
   }
 
-  if(!handled){
+  if (!handled) {
     __errorMessage(`The queue -${queue.config.name}- isn't handled by any task`.red, true);
   }
 
@@ -258,24 +265,24 @@ function _consumeMessages(queue, channel, tasks, binding) {
   }, { noAck: true });
 }
 
-function _sendMessage (queue, exchange, routingKey, data, options = {}){
+function _sendMessage(queue, exchange, routingKey, data, options = {}) {
 
   const cnnStr = __getConnectionString(this.config);
 
   amqp.connect(cnnStr)
     .then(_createChannel)
     .then(channel => {
-      channel.assertExchange(exchange, 'direct', {durable: true});
+      channel.assertExchange(exchange, 'direct', { durable: true });
 
       const content = new Buffer(JSON.stringify(data));
 
-      if(queue){
+      if (queue) {
         channel.sendToQueue(queue, content, options);
       } else {
         channel.publish(exchange, routingKey, content, options);
       }
 
-      setTimeout(function(){
+      setTimeout(function() {
         channel.connection.close();
       }, 500);
     });
